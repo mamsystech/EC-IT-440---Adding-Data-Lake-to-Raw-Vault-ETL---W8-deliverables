@@ -1,0 +1,30 @@
+Steps for Building the SSIS Package
+Package Creation:
+               dl_etl_dv.dtsx, where DL stands for Data Lake, ETL stands for Extract, Transform, Load, and DV stands for Data Vault.
+----In the package, organize your workflow with a parent Sequence Container for each source system and child Sequence Containers for each object to improve readability and modularity.
+
+Set up two OLE DB Connection Managers:
+Data Lake Connection: Connects to your SQL Server Data Lake database.
+Data Vault Connection: Connects to your SQL Server Data Vault database.
+
+Control Flow Configuration
+----For each object (e.g., Category, Product, Customer) in the Data Lake, add an Execute SQL Task within the child Sequence Container. 
+----This task will call a stored procedure that loads the object data into the Raw Vault.
+----Use parallel execution where possible to optimize ETL performance, especially for tasks that don’t have dependencies.
+
+Naming Conventions for Objects
+Stored Procedures: Prefix with usp_ (e.g., usp_load_category) to distinguish them as user-stored procedures.
+Views: Prefix with v_ (e.g., v_category).
+Hubs: Prefix with h_ (e.g., h_category).
+Satellites: Prefix with s_ (e.g., s_category).
+T-SQL Stored Procedures for Loading Objects
+
+----Each stored procedure should follow a similar pattern:
+Hub Load: Loads unique business keys and essential data from the Data Lake into the Hub table if they don’t already exist.
+Satellite Load: Checks the Hub and loads related data into the Satellite table, capturing descriptive attributes and historical information.
+               Example: EC_IT440_DV.rv.usp_load_category for the Category entity:
+----Loads data from the Data Lake view EC_IT440_DL.dbo.v_category.
+----Filters out records already in the Raw Vault Hub EC_IT440_DV.rv.h_category.
+----Loads new records into h_category (Hub) and s_category (Satellite) as needed.
+----Format Control and Data Flow Surfaces
+
