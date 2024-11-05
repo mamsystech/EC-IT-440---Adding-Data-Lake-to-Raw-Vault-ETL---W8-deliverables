@@ -1,0 +1,37 @@
+We created an SSIS package named EDW_dl_etl_dv.dtsx to automate the ETL process. This package includes both Control Flow and Data Flow tasks that handle the step-by-step ETL operations.
+Control Flow organizes the ETL into parent and child Sequence Containers. Each parent container corresponds to a source system in the Data Lake, 
+while each child container handles a specific object in the Raw Vault (e.g., Hubs, Links, Satellites).
+Stored Procedures and Views:
+
+For each entity in the Raw Vault,
+                                views (v_) in the Data Lake extract and prepare the data, 
+                                stored procedures (usp_) load the data into the Raw Vault tables.
+
+----These procedures minimize redundancy by filtering out duplicate records, managing NULL values, and enforcing data type consistency.
+----The stored procedures call views in the Data Lake that isolate only the necessary data changes since the last load, which ensures incremental loading and improves performance.
+---ETL Steps:
+
+           Extract: The ETL extracts data from the Data Lake using OLE DB connections in SSIS to ensure stable data transfer.
+           Transform: Minor transformations are applied, such as:
+           De-duplication to eliminate any redundant records.
+           NULL handling to provide defaults or remove unusable data.
+           Data type enforcement to ensure consistency across the data warehouse.
+           Load: The transformed data is loaded into Hubs, Links, and Satellites in the Raw Vault using Execute SQL Tasks that call the stored procedures. 
+----These stored procedures ensure each table’s dependencies are maintained through foreign keys.
+          
+Parallel Execution:
+The ETL process supports parallel execution where feasible, allowing tasks to run simultaneously to optimize load times. This reduces overall package runtime, especially beneficial for large data volumes.
+
+----Why It Was Built This Way
+Simplicity and Efficiency:
+                   By using minimal transformation, the ETL process remains straightforward and efficient. 
+----This approach aligns with the Data Vault’s principle of storing data in its raw form as much as possible, reducing the time and complexity involved in preprocessing data.
+Incremental Loading and Scalability:
+                   Incremental loading through stored procedures and views allows the ETL process to handle large data volumes by only processing new or changed records. 
+----This structure makes the system scalable, adaptable to growing datasets, and minimizes resource usage.
+Auditability and Traceability:
+                  Organizing data into Hubs, Links, and Satellites facilitates historical tracking and traceability. 
+----This setup makes it easier to audit data changes over time, which is valuable for compliance and data governance.
+Flexible Architecture:
+                  The Raw Vault’s design, with minimal transformation, allows data to be easily reprocessed or restructured without requiring a complete reconfiguration. 
+----The process was structured to make the data available for the Business Vault, where more complex business rules and transformations will later be applied.
